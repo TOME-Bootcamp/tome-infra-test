@@ -1,0 +1,72 @@
+services:
+  reverse-proxy:
+    image: nginx:latest
+    container_name: reverse-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./conf.d.dev:/etc/nginx/conf.d:ro
+      - ./certs.dev:/etc/letsencrypt
+    depends_on:
+      - backend
+      - front
+      - db
+      - letsencrypt
+    restart: unless-stopped
+
+  duckdns:
+    image: maksimstojkovic/duckdns
+    container_name: duckdns
+    env_file:
+      - envs/.env.duckdns
+    environment:
+      DUCKDNS_DOMAIN: tome-dev.duckdns.org
+    restart: unless-stopped
+
+  letsencrypt:
+    image: maksimstojkovic/letsencrypt
+    container_name: letsencrypt
+    volumes:
+      - ./certs.dev:/etc/letsencrypt
+    env_file:
+      - envs/.env.duckdns
+    environment:
+      DUCKDNS_DOMAIN: tome-dev.duckdns.org
+      LETSENCRYPT_EMAIL: braian.rios@ing.austral.edu.ar #TODO cambiar por el email correcto
+    restart: unless-stopped
+
+  db:
+    container_name: TOME-DB
+    image: postgres:alpine
+    ports:
+      - "5433:5433"
+    env_file:
+      - envs/.env.postgres
+    volumes:
+      - tome_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  backend:
+    container_name: tome-back
+    image: ghcr.io/tome-bootcamp/tome-back-test:dev-latest #TODO cambiar por el nombre correcto
+    env_file:
+      - envs/.env.backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  front:
+    container_name: tome-ui
+    image: ghcr.io/tome-bootcamp/tome-ui-test:dev-latest #TODO cambiar por el nombre correcto
+    env_file:
+      - envs/.env.front
+    ports: [ '3000:3000' ]
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  tome_db_data:
