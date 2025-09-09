@@ -37,7 +37,7 @@ services:
     restart: unless-stopped
 
   db:
-    container_name: TOME-DB
+    container_name: tome-db
     image: postgres:alpine
     ports:
       - "5433:5433"
@@ -61,6 +61,8 @@ services:
   front:
     container_name: tome-ui
     image: ghcr.io/tome-bootcamp/tome-ui-test:dev-latest #TODO cambiar por el nombre correcto
+    environment:
+      APP_BASE_URL: "https://tome-dev.duckdns.org"
     env_file:
       - envs/.env.front
     ports: [ '3000:3000' ]
@@ -70,3 +72,7 @@ services:
 
 volumes:
   tome_db_data:
+
+networks:
+  default:
+    driver: bridge
